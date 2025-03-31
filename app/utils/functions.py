@@ -3063,45 +3063,28 @@ async def count_unique_students(file_path: str) -> str:
         Number of unique students
     """
     try:
-        import re
-
         # Set to store unique student IDs
-        unique_students = set()
+        unique_ids = set()
 
-        # Regular expressions to extract student IDs with different patterns
-        id_patterns = [
-            r"Student\s+ID\s*[:=]?\s*(\w+)",  # Student ID: 12345
-            r"ID\s*[:=]?\s*(\w+)",  # ID: 12345
-            r"Roll\s+No\s*[:=]?\s*(\w+)",  # Roll No: 12345
-            r"Roll\s+Number\s*[:=]?\s*(\w+)",  # Roll Number: 12345
-            r"Registration\s+No\s*[:=]?\s*(\w+)",  # Registration No: 12345
-            r"(\d{6,10})",  # Just a 6-10 digit number (likely a student ID)
-        ]
+        # Regular expression pattern to extract IDs (10 alphanumeric characters followed by "::" or "Marks")
+        id_pattern = r'\b[A-Z0-9]{10}(?=::|Marks)\b'
 
         # Read the file line by line
         with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
             for line in file:
-                # Try each pattern to find student IDs
-                for pattern in id_patterns:
-                    matches = re.finditer(pattern, line, re.IGNORECASE)
-                    for match in matches:
-                        student_id = match.group(1).strip()
-                        # Validate the ID (basic check to avoid false positives)
-                        if (
-                            len(student_id) >= 3
-                        ):  # Most student IDs are at least 3 chars
-                            unique_students.add(student_id)
+                # Use regex to find all student IDs in the line
+                ids = re.findall(id_pattern, line)
 
-        # Count unique student IDs
-        count = len(unique_students)
+                # Add the found IDs to the set for uniqueness
+                unique_ids.update(ids)
 
-        return str(count)
+        # Return the count of unique student IDs
+        return len(unique_ids)
 
     except Exception as e:
         import traceback
-
         return f"Error counting unique students: {str(e)}\n{traceback.format_exc()}"
-
+    
 
 async def analyze_apache_logs(
     file_path: str,
