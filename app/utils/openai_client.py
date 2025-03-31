@@ -1190,7 +1190,6 @@ async def get_openai_response(question: str, file_path: Optional[str] = None) ->
                         headers=function_args.get("headers"),
                         data=function_args.get("data"),
                     )
-                    answer = json.loads(answer) if isinstance(answer, str) else answer
 
                 elif function_name == "sort_json_array":
                     answer = sort_json_array(
