@@ -2799,7 +2799,7 @@ Failed to format with Prettier: {str(e)}
 
 
 async def clean_sales_data_and_calculate_margin(
-    file_path: str, cutoff_date_str: str, product: str, country_filter: str
+    file_path: str, cutoff_date_str: str, product_filter: str, country_filter: str
 ) -> str:
     """
     Clean sales data from Excel and calculate margin for filtered transactions
@@ -2807,7 +2807,7 @@ async def clean_sales_data_and_calculate_margin(
     Args:
         file_path: Path to the Excel file
         cutoff_date_str: Cutoff date string in format like "Sun Feb 06 2022 18:40:58 GMT+0530 (India Standard Time)"
-        product: Product name to filter by (e.g., "Iota")
+        product_filter: Product name to filter by (e.g., "Iota")
         country_filter: Country to filter by after standardization (e.g., "UK")
 
     Returns:
@@ -3020,7 +3020,7 @@ async def clean_sales_data_and_calculate_margin(
         if "product" in std_df.columns:
             # Handle case where product column might contain NaN values
             filtered_df = filtered_df[
-                filtered_df["product"].fillna("").str.lower() == product.lower()
+                filtered_df["product"].fillna("").str.lower() == product_filter.lower()
             ]
 
         if "country" in std_df.columns:
@@ -3789,86 +3789,73 @@ async def reconstruct_scrambled_image(
         return f"Error reconstructing image: {str(e)}\n{traceback.format_exc()}"
 
 
-
-
-async def analyze_sales_with_phonetic_clustering(file_path: str, query_params: dict) -> str:
-    import json
-    import pandas as pd
-    from collections import defaultdict
-    from fuzzywuzzy import fuzz
+async def analyze_sales_with_phonetic_clustering(
+    file_path: str, query_params: dict
+) -> str:
     """
-    Analyze sales data with phonetic clustering to handle misspelled city names.
+    Analyze sales data with phonetic clustering to handle misspelled city names
 
     Args:
-        file_path: Path to the sales data JSON file.
-        query_params: Dictionary containing query parameters (product, city, min_sales, etc.).
+        file_path: Path to the sales data JSON file
+        query_params: Dictionary containing query parameters (product, city, min_sales, etc.)
 
     Returns:
-        Analysis results as a string.
+        Analysis results as a string
     """
     try:
-        # Load the sales data from the JSON file
-        with open(file_path, "r", encoding="utf-8") as f:
+        import json
+        import pandas as pd
+        from jellyfish import soundex, jaro_winkler_similarity
+
+        # Load the sales data
+        with open(file_path, "r") as f:
             sales_data = json.load(f)
 
-        # Convert data into a DataFrame
+        # Convert to DataFrame for easier analysis
         df = pd.DataFrame(sales_data)
 
-        # Ensure required columns exist
-        if not {"city", "product", "sales"}.issubset(df.columns):
-            return "Error: Missing required columns in sales data."
-
-        # Function to calculate phonetic similarity
-        def phonetic_similarity(city1, city2):
-            return fuzz.ratio(city1.lower(), city2.lower())
-
-        # Group similar city names based on phonetic similarity
-        cities = df["city"].unique()
-        distances = defaultdict(list)
-
-        for i in range(len(cities)):
-            for j in range(i + 1, len(cities)):
-                similarity = phonetic_similarity(cities[i], cities[j])
-                if similarity > 80:  # Threshold for clustering similar names
-                    distances[cities[i]].append(cities[j])
-                    distances[cities[j]].append(cities[i])
-
-        # Create clusters using DFS
-        visited = set()
-        clusters = []
-
-        for city in cities:
-            if city not in visited:
-                cluster = [city]
-                stack = [city]
-                visited.add(city)
-                while stack:
-                    current = stack.pop()
-                    for neighbor in distances[current]:
-                        if neighbor not in visited:
-                            visited.add(neighbor)
-                            stack.append(neighbor)
-                            cluster.append(neighbor)
-                clusters.append(cluster)
-
-        # Map city names to their standardized cluster representative
-        city_mapping = {city: cluster[0] for cluster in clusters for city in cluster}
-        df["standardized_city"] = df["city"].map(city_mapping)
-
-        # Standardize 'Shanghai' specifically (if it exists in the dataset)
-        for cluster in clusters:
-            if any(phonetic_similarity(city, "Shanghai") > 80 for city in cluster):
-                for city in cluster:
-                    city_mapping[city] = "Shanghai"
-
-        # Apply the standardized mapping
-        df["standardized_city"] = df["city"].map(city_mapping)
-
-        # Apply query parameters for filtering
+        # Extract query parameters
         product = query_params.get("product")
         city = query_params.get("city")
         min_sales = query_params.get("min_sales", 0)
 
+        # Create a function to check if two city names are phonetically similar
+        def is_similar_city(city1, city2, threshold=0.85):
+            # Check exact match first
+            if city1.lower() == city2.lower():
+                return True
+
+            # Check soundex (phonetic algorithm)
+            if soundex(city1) == soundex(city2):
+                # If soundex matches, check similarity score for confirmation
+                similarity = jaro_winkler_similarity(city1.lower(), city2.lower())
+                return similarity >= threshold
+
+            return False
+
+        # Create a mapping of city name variations to canonical names
+        city_clusters = {}
+        canonical_cities = set()
+
+        # First pass: identify unique canonical city names
+        for record in sales_data:
+            city_name = record["city"]
+            found_match = False
+
+            for canonical in canonical_cities:
+                if is_similar_city(city_name, canonical):
+                    city_clusters[city_name] = canonical
+                    found_match = True
+                    break
+
+            if not found_match:
+                canonical_cities.add(city_name)
+                city_clusters[city_name] = city_name
+
+        # Add a new column with standardized city names
+        df["standardized_city"] = df["city"].map(city_clusters)
+
+        # Filter based on query parameters
         filtered_df = df.copy()
 
         if product:
@@ -3877,37 +3864,36 @@ async def analyze_sales_with_phonetic_clustering(file_path: str, query_params: d
         if city:
             # Find all variations of the queried city
             similar_cities = [
-                c for c in city_mapping.keys() if phonetic_similarity(c, city) > 80
+                c for c in city_clusters.keys() if is_similar_city(c, city)
             ]
+
+            # Filter by all similar city names
             filtered_df = filtered_df[filtered_df["city"].isin(similar_cities)]
 
         if min_sales:
             filtered_df = filtered_df[filtered_df["sales"] >= min_sales]
 
-        # Aggregate sales data
-        aggregated_sales = filtered_df.groupby("standardized_city")["sales"].sum().reset_index()
+        # Calculate results
+        total_units = filtered_df["sales"].sum()
+        transaction_count = len(filtered_df)
 
-        # Identify top-performing city
-        if not aggregated_sales.empty:
-            top_city = aggregated_sales.loc[aggregated_sales["sales"].idxmax()]
-            top_city_info = f"Top-selling city: {top_city['standardized_city']} with {top_city['sales']} units sold.\n"
-        else:
-            top_city_info = "No matching sales data found.\n"
+        # Generate detailed report
+        report = f"Analysis Results:\n"
+        report += f"Total units: {total_units}\n"
+        report += f"Transaction count: {transaction_count}\n"
 
-        # Sales in Shanghai (if applicable)
-        shanghai_sales = aggregated_sales[aggregated_sales["standardized_city"] == "Shanghai"]["sales"].sum()
+        if transaction_count > 0:
+            report += f"Average units per transaction: {total_units / transaction_count:.2f}\n"
 
-        # Generate the final report
-        report = f"Sales Analysis Results:\n"
-        report += f"Total units sold: {filtered_df['sales'].sum()}\n"
-        report += f"Transaction count: {len(filtered_df)}\n"
-        report += top_city_info
+            # Show city variations if city filter was applied
+            if city:
+                city_variations = filtered_df["city"].unique()
+                report += f"City variations found: {', '.join(city_variations)}\n"
 
-        if shanghai_sales > 0:
-            report += f"Units sold in Shanghai: {shanghai_sales}\n"
-
+        # Return the filtered data for further analysis if needed
         return report
 
     except Exception as e:
         import traceback
+
         return f"Error analyzing sales data: {str(e)}\n{traceback.format_exc()}"
