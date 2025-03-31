@@ -2799,7 +2799,7 @@ Failed to format with Prettier: {str(e)}
 
 
 async def clean_sales_data_and_calculate_margin(
-    file_path: str, cutoff_date_str: str, product_filter: str, country_filter: str
+    file_path: str, cutoff_date_str: str, product: str, country_filter: str
 ) -> str:
     """
     Clean sales data from Excel and calculate margin for filtered transactions
@@ -2807,7 +2807,7 @@ async def clean_sales_data_and_calculate_margin(
     Args:
         file_path: Path to the Excel file
         cutoff_date_str: Cutoff date string in format like "Sun Feb 06 2022 18:40:58 GMT+0530 (India Standard Time)"
-        product_filter: Product name to filter by (e.g., "Iota")
+        product: Product name to filter by (e.g., "Iota")
         country_filter: Country to filter by after standardization (e.g., "UK")
 
     Returns:
@@ -3020,7 +3020,7 @@ async def clean_sales_data_and_calculate_margin(
         if "product" in std_df.columns:
             # Handle case where product column might contain NaN values
             filtered_df = filtered_df[
-                filtered_df["product"].fillna("").str.lower() == product_filter.lower()
+                filtered_df["product"].fillna("").str.lower() == product.lower()
             ]
 
         if "country" in std_df.columns:
@@ -3789,12 +3789,13 @@ async def reconstruct_scrambled_image(
         return f"Error reconstructing image: {str(e)}\n{traceback.format_exc()}"
 
 
-import json
-import pandas as pd
-from collections import defaultdict
-from fuzzywuzzy import fuzz
+
 
 async def analyze_sales_with_phonetic_clustering(file_path: str, query_params: dict) -> str:
+    import json
+    import pandas as pd
+    from collections import defaultdict
+    from fuzzywuzzy import fuzz
     """
     Analyze sales data with phonetic clustering to handle misspelled city names.
 
