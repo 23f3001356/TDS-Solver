@@ -1317,19 +1317,7 @@ async def count_tokens(text: str) -> str:
             # Extract token count from usage information
             prompt_tokens = result.get("usage", {}).get("prompt_tokens", 0)
 
-            return f"""
-# Token Count Analysis
-
-## Input Text
-
-## Token Count
-The input message uses **{prompt_tokens} tokens**.
-
-## API Request Details
-- Model: gpt-4o-mini
-- API Endpoint: {url}
-- Request Type: POST
-"""
+            return prompt_tokens
     except Exception as e:
         return f"Error counting tokens: {str(e)}"
 
