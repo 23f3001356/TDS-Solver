@@ -1247,9 +1247,9 @@ async def analyze_sentiment(text: str, api_key: str = "dummy_api_key") -> str:
     import httpx
     import json
 
-    url = "https://api.openai.com/v1/chat/completions"
+    url = "https://aiproxy.sanand.workers.dev/openai/v1/chat/completions"
 
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {AIPROXY_TOKEN}"}
 
     payload = {
         "model": "gpt-4o-mini",
@@ -1385,7 +1385,7 @@ The following JSON body can be sent to the OpenAI API to generate structured out
 ## Request Details
 - Model: gpt-4o-mini
 - Structure Type: {structure_type}
-- API Endpoint: https://api.openai.com/v1/chat/completions
+- API Endpoint: https://aiproxy.sanand.workers.dev/openai/v1/chat/completions
 - Request Type: POST
 This request is configured to return a structured JSON response that follows the specified schema.
 """
@@ -1766,7 +1766,7 @@ The following JSON body can be sent to the OpenAI API to extract text from an im
 
 ## Request Details
 - Model: gpt-4o-mini
-- API Endpoint: https://api.openai.com/v1/chat/completions
+- API Endpoint: https://aiproxy.sanand.workers.dev/openai/v1/chat/completions
 - Request Type: POST
 - Purpose: Extract text from an image using OpenAI's vision capabilities
 """
@@ -1808,7 +1808,7 @@ The following JSON body can be sent to the OpenAI API to generate embeddings:
 
 ## Request Details
 - Model: text-embedding-3-small
-- API Endpoint: https://api.openai.com/v1/embeddings
+- API Endpoint: https://aiproxy.sanand.workers.dev/openai/v1/embeddings
 - Request Type: POST
 - Purpose: Generate embeddings for text analysis
 """
@@ -1939,10 +1939,10 @@ async def compute_document_similarity(docs: List[str], query: str) -> str:
 
         # Function to get embeddings from OpenAI API
         async def get_embedding(text: str) -> List[float]:
-            url = "https://api.openai.com/v1/embeddings"
+            url = "https://aiproxy.sanand.workers.dev/openai/v1/embeddings"
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer dummy_api_key",  # Replace with actual API key in production
+                "Authorization": f"Bearer {AIPROXY_TOKEN}",  # Replace with actual API key in production
             }
             payload = {"model": "text-embedding-3-small", "input": text}
 
@@ -2010,10 +2010,10 @@ async def compute_similarity(request: SimilarityRequest):
     
     # Function to get embeddings from OpenAI API
     async def get_embedding(text: str):
-        url = "https://api.openai.com/v1/embeddings"
+        url = "https://aiproxy.sanand.workers.dev/openai/v1/embeddings"
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {OPENAI_API_KEY}"  # Use environment variable
+            "Authorization": f"Bearer {AIPROXY_TOKEN}"  # Use environment variable
         }
         payload = {
             "model": "text-embedding-3-small",
