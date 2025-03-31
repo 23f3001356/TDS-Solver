@@ -59,7 +59,7 @@ async def make_api_request(
                 result = response.json()
                 return json.dumps(result, indent=2)
             except:
-                return json.loads(response.text)
+                return response.text
 
     except Exception as e:
         return f"Error making API request: {str(e)}"
