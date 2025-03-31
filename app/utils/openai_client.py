@@ -547,7 +547,7 @@ async def get_openai_response(question: str, file_path: Optional[str] = None) ->
             "type": "function",
             "function": {
                 "name": "count_tokens",
-                "description": "Count tokens in a message sent to OpenAI API",
+                "description": "Count tokens in a message sent to https://aiproxy.sanand.workers.dev/openai/v1/chat/completions",
                 "parameters": {
                     "type": "object",
                     "properties": {
