@@ -1317,7 +1317,7 @@ async def count_tokens(text: str) -> str:
             # Extract token count from usage information
             prompt_tokens = result.get("usage", {}).get("prompt_tokens", 0)
 
-            return prompt_tokens
+            return f'"{prompt_tokens}"'
     except Exception as e:
         return f"Error counting tokens: {str(e)}"
 
