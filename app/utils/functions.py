@@ -1299,7 +1299,7 @@ async def count_tokens(text: str) -> str:
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {AIPROXY_TOKEN},
+        "Authorization": f"Bearer {AIPROXY_TOKEN}",
     }
 
     payload = {
