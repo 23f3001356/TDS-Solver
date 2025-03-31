@@ -3,6 +3,9 @@ import pandas as pd
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 
+AIPROXY_TOKEN = os.getenv("AIPROXY_TOKEN")
+AIPROXY_BASE_URL = "https://aiproxy.sanand.workers.dev/openai/v1"
+
 async def calculate_statistics(file_path: str, operation: str, column_name: str) -> str:
     """
     Calculate statistics from a CSV file.
@@ -1292,11 +1295,11 @@ async def count_tokens(text: str) -> str:
     import httpx
     import json
 
-    url = "https://api.openai.com/v1/chat/completions"
+    url = "https://aiproxy.sanand.workers.dev/openai/v1/chat/completions"
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer dummy_api_key",
+        "Authorization": f"Bearer {AIPROXY_TOKEN},
     }
 
     payload = {
